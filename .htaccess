@@ -1,0 +1,41 @@
+# =========================================================
+# Sécurité — hébergements Apache (OVH, Hostinger, o2switch, IONOS…)
+# =========================================================
+
+# 1. Forcer le HTTPS
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# 1b. (Optionnel) Rediriger globalinx.com vers www.globalinx.com : retire les # pour activer
+# <IfModule mod_rewrite.c>
+#   RewriteCond %{HTTP_HOST} ^globalinx\.com$ [NC]
+#   RewriteRule ^ https://www.globalinx.com%{REQUEST_URI} [L,R=301]
+# </IfModule>
+
+# 2. Ne pas lister le contenu des dossiers ; page d'erreur personnalisée
+Options -Indexes
+ErrorDocument 404 /404.html
+
+# 3. Bloquer l'accès aux fichiers cachés (.git, .env…) et aux fichiers sensibles
+RedirectMatch 404 /\.(?!well-known/)
+<FilesMatch "(?i)\.(md|log|bak|old|sql|env|ini|sh|zip|tar|gz)$|^_headers$">
+  Require all denied
+</FilesMatch>
+
+# 4. En-têtes de sécurité HTTP
+# ⚠️ Si tu ajoutes un service externe (Formspree, Analytics…), autorise son domaine dans la CSP.
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; manifest-src 'self'; worker-src 'none'; upgrade-insecure-requests; require-trusted-types-for 'script'"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set X-Permitted-Cross-Domain-Policies "none"
+  Header always unset X-Powered-By
+</IfModule>
